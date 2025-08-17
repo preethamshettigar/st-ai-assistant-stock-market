@@ -79,16 +79,16 @@ if rapidapi_key:
 def get_clients():
     if not st.session_state.GROQ_API_KEY:
         st.warning("⚠️ Please enter your Groq API key.")
-        return None, None, None
+        return None, None
     #if not st.session_state.ELEVENLABS_API_KEY:
     #    st.warning("⚠️ Please enter your ElevenLabs API key.")
     #    return None, None, None
     if not st.session_state.ASSEMBLYAI_API_KEY:
         st.warning("⚠️ Please enter your AssemblyAI API key.")
-        return None, None, None
+        return None, None
     if not st.session_state.RAPIDAPI_KEY:
         st.warning("⚠️ Please enter your RapidAPI key.")
-        return None, None, None
+        return None, None
 
     try:
         # Initialize clients
