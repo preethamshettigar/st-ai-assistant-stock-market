@@ -4,8 +4,8 @@ import requests
 import tempfile
 import streamlit as st
 from groq import Groq
-from elevenlabs.client import ElevenLabs
-from elevenlabs import VoiceSettings
+#from elevenlabs.client import ElevenLabs
+#from elevenlabs import VoiceSettings
 import assemblyai as aai
 
 from PyPDF2 import PdfReader
@@ -46,14 +46,14 @@ if groq_api_key:
     st.session_state.GROQ_API_KEY = groq_api_key
 
 # ElevenLabs API Key
-elevenlabs_api_key = st.sidebar.text_input(
-    "ElevenLabs API Key",
-    type="password",
-    value=st.session_state.ELEVENLABS_API_KEY or "",
-    #help="Get your ElevenLabs API key from https://elevenlabs.io/"
-)
-if elevenlabs_api_key:
-    st.session_state.ELEVENLABS_API_KEY = elevenlabs_api_key
+#elevenlabs_api_key = st.sidebar.text_input(
+#    "ElevenLabs API Key",
+#    type="password",
+#    value=st.session_state.ELEVENLABS_API_KEY or "",
+#    #help="Get your ElevenLabs API key from https://elevenlabs.io/"
+#)
+#if elevenlabs_api_key:
+#    st.session_state.ELEVENLABS_API_KEY = elevenlabs_api_key
 
 # AssemblyAI API Key
 assemblyai_api_key = st.sidebar.text_input(
@@ -80,9 +80,9 @@ def get_clients():
     if not st.session_state.GROQ_API_KEY:
         st.warning("⚠️ Please enter your Groq API key.")
         return None, None, None
-    if not st.session_state.ELEVENLABS_API_KEY:
-        st.warning("⚠️ Please enter your ElevenLabs API key.")
-        return None, None, None
+    #if not st.session_state.ELEVENLABS_API_KEY:
+    #    st.warning("⚠️ Please enter your ElevenLabs API key.")
+    #    return None, None, None
     if not st.session_state.ASSEMBLYAI_API_KEY:
         st.warning("⚠️ Please enter your AssemblyAI API key.")
         return None, None, None
@@ -93,20 +93,20 @@ def get_clients():
     try:
         # Initialize clients
         client = Groq(api_key=st.session_state.GROQ_API_KEY)
-        eleven_client = ElevenLabs(api_key=st.session_state.ELEVENLABS_API_KEY)
+        #eleven_client = ElevenLabs(api_key=st.session_state.ELEVENLABS_API_KEY)
         aai.settings.api_key = st.session_state.ASSEMBLYAI_API_KEY
         RAPIDAPI_KEY = st.session_state.RAPIDAPI_KEY
 
-        return client, eleven_client, RAPIDAPI_KEY
+        return client, RAPIDAPI_KEY
     except Exception as e:
         st.error(f"❌ Failed to initialize API clients: {e}")
         return None, None, None
 
 # Get API clients
-client, eleven_client, RAPIDAPI_KEY = get_clients()
+client, RAPIDAPI_KEY = get_clients()
 
 # Exit early if any key is missing
-if not all([client, eleven_client, RAPIDAPI_KEY]):
+if not all([client, RAPIDAPI_KEY]):
     st.markdown("### 🚀 Stock Analysis Assistant")
     st.markdown("Welcome! Please enter your API keys in the sidebar to get started.")
     st.stop()
@@ -115,7 +115,7 @@ if not all([client, eleven_client, RAPIDAPI_KEY]):
 st.sidebar.divider()
 if st.sidebar.button("Clear All API Keys"):
     st.session_state.GROQ_API_KEY = None
-    st.session_state.ELEVENLABS_API_KEY = None
+    #st.session_state.ELEVENLABS_API_KEY = None
     st.session_state.ASSEMBLYAI_API_KEY = None
     st.session_state.RAPIDAPI_KEY = None
     st.rerun()
@@ -297,6 +297,40 @@ def summarize_with_groq(data, query, user_query):
     )
     return response.choices[0].message.content
 
+#---------------Voice Groq Play AI TTS--------------------
+# === Helper function for TTS ===
+def play_audio_response_groq(text: str):
+    try:
+        #speech_file = Path("response.wav")
+        response = client.audio.speech.create(
+            model="playai-tts",
+            voice="Aaliyah-PlayAI",
+            input=text,  # the generated response text
+            response_format="wav"
+            )
+        
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_audio:
+            tmp_audio_path = tmp_audio.name
+        response.write_to_file(tmp_audio_path)  # Groq writes full file
+
+        with open(tmp_audio_path, "rb") as f:
+            audio_bytes = f.read()
+            b64_audio = base64.b64encode(audio_bytes).decode()
+
+        st.subheader("🔊 Audio Response:")
+        st.markdown(
+            f"""
+            <audio autoplay>
+                <source src="data:audio/mp3;base64,{b64_audio}" type="audio/mp3">
+            </audio>
+            """,
+            unsafe_allow_html=True,
+        )
+        st.audio(tmp_audio_path, format="audio/wav")
+
+    except Exception as tts_error:
+        st.warning(f"Error generating audio: {tts_error}")
+
 # ------------- SESSION STATE -------------------
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -309,7 +343,7 @@ if "vectorstore" not in st.session_state:
 
 # --- Streamlit UI ---
 st.set_page_config(page_title="AI Stock Assistant", page_icon="📈", layout="wide")
-st.title("AI Assistant - Stock Market 📈")
+st.title("AI Assistant - Stock Market")
 #st.markdown("*AI-Powered Stock Market Analysis with Document Q&A*")
 
 # --- Sidebar: Upload PDF ---
@@ -399,11 +433,13 @@ if query_type == "🧠 General QA":
 elif query_type == "🔍 Research QA":
     input_method = st.radio("Talk or Type:", ["⌨️ Text", "🎤 Voice"], horizontal=True)
     transcript_text = None
-
+    
+# === Voice Input ===
     if input_method == "🎤 Voice":
         wav_audio_data = st.audio_input("Record a voice message")
         if wav_audio_data:
             st.audio(wav_audio_data, format='audio/wav')
+            # Read the uploaded file as bytes
             audio_bytes = wav_audio_data.read()
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_file:
                 tmp_file.write(audio_bytes)
@@ -416,63 +452,62 @@ elif query_type == "🔍 Research QA":
                 st.markdown(f"> {transcript_text}")
             else:
                 st.warning("Transcription failed.")
+
+# === Text Input ===
     else:
         transcript_text = st.chat_input("Ask anything related to company details...")
 
+# === MAIN LOGIC "🔍 Research QA" ===
     if transcript_text:
+        # Add user message to chat history
         st.session_state.messages.append({"role": "user", "content": transcript_text})
+        
+        # Show user message
         with st.chat_message("user"):
             st.markdown(transcript_text)
 
         with st.spinner("🧠 Understanding company..."):
-            stock_name = get_company_name(transcript_text, st.session_state.last_company)
-        with st.spinner("🧠 Understanding intent..."):
-            intent = get_classify_intent(transcript_text, st.session_state.last_intent)
+            stock_name = get_company_name(transcript_text,st.session_state.last_company)
+            #st.write(f"🔍 Recognized company name: **{stock_name}**")
 
-        with st.spinner("Fetching data..."):
-            api_name = get_api_to_call(intent)
-            raw_data = call_api(api_name, stock_name, intent)
+        # Step 2: Extract intent
+        with st.spinner("🧠 Understanding query intent..."):
+            intent = get_classify_intent(transcript_text,st.session_state.last_intent)
+            #st.write(f"🔍 Recognized intent: **{intent}**")
 
-            if "error" not in raw_data:
-                filtered_data = filter_json_data(raw_data, intent)
-                with st.spinner("🧠 Generating summary..."):
-                    response = summarize_with_groq(filtered_data, intent, transcript_text)
+        with st.spinner("Understanding your request..."):
+            if not stock_name:
+                response = "Could not identify the company. Please specify the company name."
             else:
-                response = raw_data["error"]
+                #st.info(f"Looking up {intent} for {stock_name}...")
 
-        st.session_state.last_company = stock_name
-        st.session_state.last_intent = intent
+                with st.spinner("Fetching company details..."):
+                    api_name = get_api_to_call(intent)
+                    raw_data = call_api(api_name,stock_name,intent)
+
+                    if "error" not in raw_data:
+                        #st.subheader("Raw API Response:")
+                        #st.json(raw_data)
+                        filtered_data = filter_json_data(raw_data,intent)
+                        #st.info(filtered_data)
+                        
+                        # Summarize using LLM
+                        with st.spinner("🧠 Generating summary..."):
+                            response = summarize_with_groq(filtered_data, intent,transcript_text)
+
+                    else:
+                        response = raw_data["error"]
+            # Save context for follow-up questions
+            st.session_state.last_company = stock_name
+            st.session_state.last_intent = intent
+
+        # Add assistant message to chat
         st.session_state.messages.append({"role": "assistant", "content": response})
-
-        with st.chat_message("assistant"):
-            st.markdown(response)
-
-        # TTS
-        try:
-            audio_stream = eleven_client.text_to_speech.convert(
-                voice_id="9BWtsMINqrJLrRacOk9x",
-                output_format="mp3_22050_32",
-                text=response,
-                model_id="eleven_multilingual_v2",
-                voice_settings=VoiceSettings(stability=0.5, similarity_boost=0.75, style=0.5, use_speaker_boost=True)
-            )
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp_audio:
-                for chunk in audio_stream:
-                    tmp_audio.write(chunk)
-                tmp_audio_path = tmp_audio.name
-
-            with open(tmp_audio_path, "rb") as f:
-                audio_bytes = f.read()
-                b64_audio = base64.b64encode(audio_bytes).decode()
-
-            st.markdown("🔊 Audio Response:")
-            st.markdown(
-                f'<audio autoplay><source src="data:audio/mp3;base64,{b64_audio}" type="audio/mp3"></audio>',
-                unsafe_allow_html=True
-            )
-            st.audio(tmp_audio_path, format="audio/mp3")
-        except Exception as e:
-            st.warning(f"Audio generation failed: {e}")
+        # Show assistant message
+        with st.chat_message("assistant"):st.markdown(response)
+        if input_method == "🎤 Voice":
+            #play_audio_response(response)
+            play_audio_response_groq(response)
 
 # === DOCUMENT QA ===
 elif query_type == "🧾 Document QA":
