@@ -88,7 +88,7 @@ def get_clients():
         return None, None, None
     if not st.session_state.RAPIDAPI_KEY:
         st.warning("⚠️ Please enter your RapidAPI key.")
-        return None, None
+        return None, None, None
 
     try:
         # Initialize clients
@@ -100,7 +100,7 @@ def get_clients():
         return client, RAPIDAPI_KEY
     except Exception as e:
         st.error(f"❌ Failed to initialize API clients: {e}")
-        return None, None, None
+        return None, None
 
 # Get API clients
 client, RAPIDAPI_KEY = get_clients()
@@ -534,5 +534,4 @@ elif query_type == "🧾 Document QA":
 
 # === PORTFOLIO MANAGEMENT ===
 elif query_type == "💼 Portfolio Management":
-
     st.write("💼 Portfolio Management is under development. Stay tuned!")
