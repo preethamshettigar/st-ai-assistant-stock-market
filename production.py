@@ -303,8 +303,7 @@ def play_audio_response_groq(text: str):
     try:
         #speech_file = Path("response.wav")
         response = client.audio.speech.create(
-            model="playai-tts",
-            voice="Aaliyah-PlayAI",
+            model="whisper-large-v3", # Required model to use for translation
             input=text,  # the generated response text
             response_format="wav"
             )
