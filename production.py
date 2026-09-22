@@ -161,7 +161,7 @@ def get_company_name(user_query, last_company):
     Output:
     """
     response = client.chat.completions.create(
-        model="llama3-8b-8192",
+        model="qwen/qwen3.8-27b",
         messages=[{"role": "user", "content": prompt}],
         max_tokens=30,
         temperature=0
@@ -190,7 +190,7 @@ def get_classify_intent(user_query, last_intent):
     Output:
     """
     response = client.chat.completions.create(
-        model="llama3-8b-8192",
+        model="qwen/qwen3.8-27b",
         messages=[{"role": "user", "content": prompt}],
         max_tokens=30,
         temperature=0
@@ -290,7 +290,7 @@ def summarize_with_groq(data, query, user_query):
     Explain it clearly and simply. If no relevant data, say so. Do not mention JSON.
     """
     response = client.chat.completions.create(
-        model="llama3-8b-8192",
+        model="qwen/qwen3.8-27b",
         messages=[{"role": "user", "content": prompt}],
         max_tokens=500,
         temperature=0.3
@@ -522,7 +522,7 @@ elif query_type == "🧾 Document QA":
                 st.markdown(transcript_text)
 
             docs = st.session_state.vectorstore.similarity_search(transcript_text)
-            llm = ChatGroq(groq_api_key=st.session_state.GROQ_API_KEY, model_name="llama3-8b-8192")
+            llm = ChatGroq(groq_api_key=st.session_state.GROQ_API_KEY, model_name="qwen/qwen3.8-27b")
             chain = load_qa_chain(llm, chain_type="stuff")
 
             with st.spinner("🤖 Thinking..."):
