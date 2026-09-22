@@ -304,8 +304,8 @@ def play_audio_response_groq(text: str):
         #speech_file = Path("response.wav")
         response = client.audio.speech.create(
             #model="whisper-large-v3", # Required model to use for translation
-            model = "canopylabs/orpheus-v1-english"
-            voice = "troy"
+            model = "canopylabs/orpheus-v1-english",
+            voice = "troy",
             input=text,  # the generated response text
             response_format="wav"
             )
